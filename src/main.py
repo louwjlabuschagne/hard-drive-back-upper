@@ -22,7 +22,6 @@ def files_in_dir(root_dir):
             file_set.add(rel_file)
     return file_set
 
-
 if __name__ == '__main__':
     description = """
     This program copies all new files in a source directory (src_dir) to a destination directory (dst_dir).
@@ -87,6 +86,7 @@ if __name__ == '__main__':
                     os.makedirs(dst_folder)
                     if v: log_print('Created folder %s'%('dst:/'+dst_folder.replace(dst_drive, '')))
 
+                #the actual copying happens here
                 copyfile(src_file, dst_file)
                 if v: log_print('Coppied %s --> %s'%('src:/'+file, 'dst:/'+file))
             if v: log_print('Copying Complete')

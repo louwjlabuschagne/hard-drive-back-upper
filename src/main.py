@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
         #if there are new files to copy
         if len(files_that_are_on_the_src_and_not_on_the_dst) != 0:
-            if v: log_print('New files files to be copied %s'%str(files_that_are_on_the_src_and_not_on_the_dst))
+            if v: log_print('New files to be copied %s'%str(files_that_are_on_the_src_and_not_on_the_dst))
             if v: log_print('Copying started')
             for file in files_that_are_on_the_src_and_not_on_the_dst:
                 #get the full file path of the source and destination files

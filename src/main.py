@@ -2,6 +2,7 @@ import os
 import argparse
 from shutil import copyfile
 from time import gmtime, strftime
+from pathlib import Path, PureWindowsPath
 
 def log_print(message):
     """
@@ -20,11 +21,12 @@ def files_in_dir(root_dir):
             rel_dir = os.path.relpath(dir_, root_dir)
             rel_file = os.path.join(rel_dir, file_name)
             file_set.add(rel_file)
-    return file_set
+
+    return [Path(PureWindowsPath(f)) for f in file_set]
 
 if __name__ == '__main__':
     description = """
-    This program copies all new files in a source directory (src_dir) to a destination directory (dst_dir).
+    This program copies all new files in a source directory (src_dir) to a destination directory (dst_dir) on Windows.
 
     Rules for conflicts:
 
@@ -37,9 +39,14 @@ if __name__ == '__main__':
     3. If the file exists on the destination but not the source, leave it on the destination
 
     The current implementation will ignore empty folders.
+
+    Example usage:
+    python main.py -v -s='C:\\Users\\labuschagnel01\\Downloads\\folder_coppier\\src_dir' -d='D:\\dst_dir'
+
+    NOTE: you have to use the quotes and the backslashes
     """
 
-    parser = argparse.ArgumentParser(prog='Hard Drive Back Upper',description=description)
+    parser = argparse.ArgumentParser(prog='Hard Drive Back Upper',description=description,formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-s', '--src_dir', type=str,
                         help='The source directory to copy from')
     parser.add_argument('-d', '--dst_dir', type=str,
@@ -48,21 +55,25 @@ if __name__ == '__main__':
                         help='Print out logs')
     args = parser.parse_args()
 
-    src_drive = args.src_dir
-    dst_drive = args.dst_dir
+    src_drive = args.src_dir.replace('\\','//').replace("'",'')
+    dst_drive = args.dst_dir.replace('\\','//').replace("'",'')
     v = args.verbose
+
+    print('variables')
+
+    print("src_drive: %s \ndst_drive: %s \nv: %s"%(src_drive, dst_drive, str(v)))
 
     #if we have both a source and a destination drive, then continue
     if (bool(src_drive)) & (bool(dst_drive)):
         if v: log_print('App Start')
         src_files = files_in_dir(src_drive)
         #macOS creates DS_Store files for each folder, this just removes them from our source files to copy
-        src_files = set([file for file in src_files if 'DS_Store' not in file])
+        src_files = set([file for file in src_files if 'DS_Store' not in file.name])
         if v: log_print('There are %d files in the source directory'%len(src_files))
 
         dst_files = files_in_dir(dst_drive)
         #macOS creates DS_Store files for each folder, this just removes them from our destination files to copy
-        dst_files = set([file for file in dst_files if 'DS_Store' not in file])
+        dst_files = set([file for file in dst_files if 'DS_Store' not in file.name])
         if v: log_print('There are %d files in the destination directory'%len(dst_files))
 
         files_that_are_on_the_src_and_not_on_the_dst = [file for file in src_files if file not in dst_files]
@@ -70,25 +81,27 @@ if __name__ == '__main__':
 
         #if there are new files to copy
         if len(files_that_are_on_the_src_and_not_on_the_dst) != 0:
-            if v: log_print('New files to be copied %s'%str(files_that_are_on_the_src_and_not_on_the_dst))
+            if v: log_print('New files to be copied:')
+            if v: [log_print('\t\t%s'%str(s))  for s in files_that_are_on_the_src_and_not_on_the_dst]
             if v: log_print('Copying started')
             for file in files_that_are_on_the_src_and_not_on_the_dst:
                 #get the full file path of the source and destination files
-                dst_file = dst_drive+file
-                src_file = src_drive+file
+                dst_file = str(dst_drive/file)
+                src_file = str(src_drive/file)
 
                 #but if the folders don't exists, we first need to create them
                 #this gets the destination folder for file
-                dst_folder = dst_file.rsplit('/', maxsplit=1)[0]
+                dst_folder = dst_file.rsplit('\\', maxsplit=1)[0]
 
                 #check if the destination folder exists, if not create it
                 if not os.path.exists(dst_folder):
                     os.makedirs(dst_folder)
-                    if v: log_print('Created folder %s'%('dst:/'+dst_folder.replace(dst_drive, '')))
+                    if v: log_print('Created folder: %s'%(dst_folder.replace(dst_drive, '')))
 
                 #the actual copying happens here
                 copyfile(src_file, dst_file)
-                if v: log_print('Coppied %s --> %s'%('src:/'+file, 'dst:/'+file))
+
+                if v: log_print('\t\tCoppied %s --> %s'%(str(src_file), dst_file))
             if v: log_print('Copying Complete')
         if v: log_print('App End')
     else:
